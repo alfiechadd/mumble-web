@@ -1,5 +1,4 @@
-
-FROM node:14-bullseye
+FROM node:14-bullseye-slim
 
 WORKDIR /home/node
 
