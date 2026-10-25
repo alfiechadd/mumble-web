@@ -1,23 +1,24 @@
 
-FROM node:14-buster
+FROM node:14-bullseye
 
 WORKDIR /home/node
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git python3 make g++ websockify tini \
+    git openssh-client python3 make g++ websockify tini ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --chown=node:node package.json package-lock.json ./
+RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" \
+    && git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-USER node
+COPY package.json package-lock.json ./
 
-RUN npm install --legacy-peer-deps \
-    && npm run build
+RUN npm install
 
-USER root
+COPY . .
+
+RUN npm run build
 
 EXPOSE 8080
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
-
-CMD ["sh", "-c", "websockify --web=/home/node/dist 8080 \"$MUMBLE_SERVER\""]
+ENTRYPOINT ["tini", "--"]
+CMD ["sh", "-c", "exec websockify --web=/home/node/dist 0.0.0.0:8080 ${MUMBLE_SERVER}"]
